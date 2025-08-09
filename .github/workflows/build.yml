@@ -37,14 +37,13 @@ jobs:
       - name: Build kernel and modules
         run: |
           make -j$(nproc)
-          sudo make modules_install -j$(nproc)
-          sudo make install -j$(nproc)
+          make modules -j$(nproc)
+          make modules_install INSTALL_MOD_PATH=output/modules
+          mkdir -p output
+          cp arch/x86/boot/bzImage output/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: |
-            .config
-            arch/x86/boot/bzImage
-            /lib/modules/$(make kernelrelease)
+          name: build-artifacts2
+          path: output/**
