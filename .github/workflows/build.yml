@@ -1,7 +1,6 @@
 name: Build
 
 on:
-
   push:
     branches:
       - develop*
@@ -14,6 +13,7 @@ jobs:
     env:
       DEBIAN_FRONTEND: noninteractive
       TZ: Europe/London
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,19 +21,24 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential flex bison dwarves libssl-dev libelf-dev bc tzdata python3
+          sudo apt-get install -y \
+            build-essential flex bison dwarves libssl-dev libelf-dev bc \
+            tzdata python3
 
-      - name: Build steps
+      - name: Configure kernel
         run: |
-          uname -a
           cp Microsoft/config-wsl .config
           ./scripts/config --enable CONFIG_BT
           ./scripts/config --enable CONFIG_BT_HCIBTUSB
           ./scripts/config --enable CONFIG_RFKILL
+          echo "-wslbt" > localversion
           make olddefconfig
-          make -j $(nproc)
-          sudo make modules_install -j $(nproc)
-          sudo make install -j $(nproc)
+
+      - name: Build kernel and modules
+        run: |
+          make -j$(nproc)
+          sudo make modules_install -j$(nproc)
+          sudo make install -j$(nproc)
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -42,3 +47,4 @@ jobs:
           path: |
             .config
             arch/x86/boot/bzImage
+            /lib/modules/$(make kernelrelease)
